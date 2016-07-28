@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.atguigu.crm.mapper.CustomerDrainMapper">
+
+	<update id="updateStatus">
+		UPDATE CUSTOMER_DRAINS SET status = #{status}, reason = #{reason}, drain_date = #{drainDate}
+		WHERE ID = #{id}
+	</update>
+
+	<update id="updateDelay">
+		UPDATE CUSTOMER_DRAINS SET delay = #{delay} 
+		WHERE id = #{id}
+	</update>
+
+	<select id="getById" resultType="com.atguigu.crm.entity.CustomerDrain">
+		SELECT ROWNUM rn, cd.id, drain_date, last_order_date, reason, status, delay, cd.customer_id AS "customer.id", cu.manager_id AS "customer.manager.id", cu.name AS "customer.name", co.name AS "customer.manager.name"
+	    FROM CUSTOMER_DRAINS cd 
+	    LEFT OUTER JOIN customers cu
+	    ON cu.id = cd.customer_id
+	    LEFT OUTER JOIN contacts co
+	    ON co.id = cu.manager_id 
+	    WHERE cd.id = #{id}
+	</select>
+
+	<sql id="customerDrainQueryCondition">
+		<if test="customerName != null and customerName != '%%'">
+			AND cu.name LIKE #{customerName}
+		</if>
+		<if test="customerManagerName != null and customerManagerName != '%%'">
+			AND co.name LIKE #{customerManagerName}
+		</if>
+	</sql>
+
+	<resultMap type="com.atguigu.crm.entity.CustomerDrain" id="contactNameAndCustomerName">
+		<id column="id" property="id"/>
+		<result column="drain_date" property="drainDate"/>
+		<result column="last_order_date" property="lastOrderDate"/>
+		<result column="reason" property="reason"/>
+		<result column="status" property="status"/>
+		<association property="customer" column="customer_id" javaType="com.atguigu.crm.entity.Customer" select="com.atguigu.crm.mapper.CustomerMapper.getCustomerWithContact"></association>
+	</resultMap>
+
+	<select id="getAllCustomerDrain" resultType="com.atguigu.crm.entity.CustomerDrain">
+		SELECT * 
+		FROM (
+			SELECT ROWNUM rn, cd.id, drain_date, last_order_date, reason, status, cd.customer_id AS "customer.id", cu.manager_id AS "customer.manager.id", cu.name AS "customer.name", co.name AS "customer.manager.name"
+			FROM CUSTOMER_DRAINS cd 
+			LEFT OUTER JOIN customers cu
+			ON cu.id = cd.customer_id
+			LEFT OUTER JOIN contacts co
+			ON co.id = cu.manager_id
+			WHERE 1 = 1
+			<include refid="customerDrainQueryCondition"/>
+			) s
+		<![CDATA[
+		WHERE rn >= #{fromIndex} AND rn < #{endIndex}
+		]]>
+	</select>
+	
+	<select id="getTotalElements" resultType="long">
+		SELECT COUNT(cd.ID) 
+		FROM CUSTOMER_DRAINS cd
+		LEFT OUTER JOIN customers cu
+		ON cu.id = cd.customer_id
+		LEFT OUTER JOIN contacts co
+		ON co.id = cu.manager_id
+		WHERE 1 = 1
+		<include refid="customerDrainQueryCondition"/>
+	</select>
+	
+</mapper>

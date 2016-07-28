@@ -1,0 +1,9 @@
+package com.atguigu.crm.mapper;
+
+import com.atguigu.crm.entity.Contact;
+
+public interface ContactMapper {
+
+	int insertContactForFinshChance(Contact contact);
+	
+}

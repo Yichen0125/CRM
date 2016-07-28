@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.atguigu.crm.mapper.ProductMapper">
+	<!-- 把查询条件额外的提取出来. -->
+	<sql id="productQueryCondition">
+		WHERE 1 = 1
+		<if test="name != null and name != '%%'">
+			AND name LIKE #{name}
+		</if>
+		<if test="type != null and type != '%%'">
+			AND type LIKE #{type}
+		</if>
+		<if test="batch != null and batch != '%%'">
+			AND batch LIKE #{batch}
+		</if>
+	</sql>
+	
+	<select id="getTotalElements" resultType="long">
+		SELECT count(id)
+		FROM products
+		<include refid="productQueryCondition"/>
+	</select>
+	
+	<select id="getContect" resultType="com.atguigu.crm.entity.Product">
+		SELECT *
+		FROM(
+			SELECT rownum rn,id,batch,memo,name,price,type,unit
+			FROM products
+			<include refid="productQueryCondition"/>
+		)s
+		<![CDATA[
+		WHERE rn >= #{fromIndex} AND rn < #{endIndex}
+		]]>
+	</select>
+	
+	<select id="getProductById" resultType="com.atguigu.crm.entity.Product">
+		SELECT id,batch,memo,name,price,type,unit
+		FROM products
+		WHERE id=#{id}
+	</select>
+	
+	<insert id="save">
+		INSERT INTO products(id,batch,memo,name,price,type,unit) 
+		VALUES (crm_seq.nextval, #{batch}, #{memo}, #{name},#{price},#{type},#{unit}) 
+	</insert>
+	
+	<delete id="delete">
+		DELETE FROM products
+		WHERE id=#{id}
+	</delete>
+	
+	<update id="update">
+		UPDATE products
+		SET batch=#{batch}, memo=#{memo},name=#{name},price=#{price},type=#{type},unit=#{unit}
+		WHERE id=#{id}
+	</update>
+</mapper>

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.atguigu.crm.batch.TestMapper">
+
+	<insert id="batchInsert" parameterType="java.util.List">
+		insert into employees (ID, last_name)
+		<foreach close=")" collection="list" item="item" index="index"
+			open="(" separator="union">
+			select
+			#{item.id,jdbcType=VARCHAR},
+			#{item.text,jdbcType=VARCHAR},
+			#{item.stauts,jdbcType=VARCHAR}
+			from
+			dual
+		</foreach>
+	</insert>
+
+</mapper>

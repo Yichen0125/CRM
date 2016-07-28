@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.atguigu.crm.mapper.DictMapper">
+
+	<delete id="delete">
+		DELETE FROM dicts WHERE id = #{id}
+	</delete>
+
+	<update id="update">
+		UPDATE dicts 
+		SET editable = #{editable}, item = #{item}, type = #{type}, value = #{value}
+		WHERE id = #{id}
+	</update>
+
+	<select id="getById" resultType="com.atguigu.crm.entity.Dict">
+		SELECT editable, item, type, value
+		FROM dicts
+		WHERE id = #{id}
+	</select>
+
+	<insert id="save">
+		INSERT INTO dicts (id, editable, item, type, value)
+		VALUES(CRM_SEQ.nextval, #{editable}, #{item}, #{type}, #{value})
+	</insert>
+
+	<sql id="dictQuery">
+		WHERE 1 = 1
+		<if test="type != null and type != '%%'">
+			AND type LIKE #{type}
+		</if>
+		<if test="item != null and item != '%%'">
+			AND item LIKE #{item}
+		</if>
+		<if test="value != null and value != '%%'">
+			AND value LIKE #{value}
+		</if>
+	</sql>
+	
+	<resultMap type="com.atguigu.crm.entity.Dict" id="getBy">
+		<id column="id" property="id"/>
+		<result column="editable" property="editable"/>
+		<result column="item" property="item"/>
+		<result column="type" property="type"/>
+		<result column="value" property="value"/>
+	</resultMap>
+	
+	<select id="getContent" resultMap="getBy">
+		SELECT *
+		FROM(
+			SELECT rownum rn, id, editable, item, type, value
+			FROM dicts
+			<include refid="dictQuery"/>
+		)s
+		<![CDATA[
+		WHERE rn >= #{fromIndex} AND rn < #{endIndex}
+		]]>
+	</select>
+	
+	<select id="getTotalElements" resultType="long">
+		SELECT count(id)
+		FROM dicts
+		<include refid="dictQuery"/>
+	</select>
+
+	<resultMap type="java.lang.String" id="get"></resultMap>
+
+	<select id="getDict" resultMap="get">
+		SELECT item
+		FROM dicts
+		WHERE type = #{type}
+	</select>
+
+</mapper>

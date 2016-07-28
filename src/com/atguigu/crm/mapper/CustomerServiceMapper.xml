@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.atguigu.crm.mapper.CustomerServiceMapper">
+	<insert id="saveCustomerService">
+		INSERT INTO customer_services (ID, create_date, service_state,service_type,service_title,service_request,created_id, customer_id)
+		VALUES(CRM_SEQ.nextval, #{createDate}, #{serviceState},#{serviceType},#{serviceTitle},#{serviceRequest},#{createdby.id},#{customer.id}) 
+	</insert>					  
+</mapper>

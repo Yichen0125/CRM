@@ -1,0 +1,13 @@
+<%@ tag import="java.util.Date"%>
+<%@ tag language="java" pageEncoding="UTF-8"%>
+
+<!-- 定义当前标签的属性 -->
+<%@ attribute name="username" required="true" type="java.lang.String" rtexprvalue="true" %>
+
+Hello^^^: <%= new Date() %>
+<br>
+
+username: <%= username %>
+
+<!-- 处理表前提 -->
+<jsp:doBody></jsp:doBody>

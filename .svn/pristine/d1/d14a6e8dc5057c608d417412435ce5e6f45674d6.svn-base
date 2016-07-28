@@ -1,0 +1,9 @@
+package com.atguigu.crm.mapper;
+
+import com.atguigu.crm.entity.Customer;
+
+public interface CustomerMapper {
+
+	public int insertCustomerForFinisChance(Customer customer);
+	
+}

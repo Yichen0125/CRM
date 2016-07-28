@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.atguigu.crm.mapper.ReportMapper">
+
+	<!-- 客户流失分析 -->
+	<select id="getTotalElementsByDrain" resultType="long">
+		SELECT COUNT(cd.id)
+		FROM CUSTOMER_DRAINS cd
+		LEFT OUTER JOIN customers c
+		ON c.id = cd.customer_id
+		LEFT OUTER JOIN contacts co 
+		ON co.id = c.manager_id
+		WHERE 1 = 1
+		<if test="customerName != null and customerName != ''">
+	    	AND c.name LIKE #{customerName}
+	    </if>
+	    <if test="managerName != null and managerName != ''">
+	    	AND co.name LIKE #{managerName}
+	    </if>
+	</select>
+	
+	<select id="getContentByDrain" resultType="java.util.Map">
+		SELECT *
+		FROM (
+		  SELECT ROWNUM rn, s.*
+		  FROM (
+		    SELECT to_date(to_char(cd.drain_date,'yyyy-MM-dd'),'yyyy-MM-dd') AS "drainDate", c.name AS "customer.name", cd.reason AS "reason", co.name AS "customer.manager.name"
+		    FROM CUSTOMER_DRAINS cd
+		    LEFT OUTER JOIN customers c
+		    ON c.id = cd.customer_id
+		    LEFT OUTER JOIN contacts co 
+		    ON co.id = c.manager_id
+		    WHERE 1 = 1
+		    <if test="customerName != null and customerName != ''">
+		    	AND c.name LIKE #{customerName}
+		    </if>
+		    <if test="managerName != null and managerName != ''">
+		    	AND co.name LIKE #{managerName}
+		    </if>
+		  )s
+		)
+		<![CDATA[
+		WHERE rn >= #{fromIndex} AND rn < #{endIndex}
+		]]>
+	</select>
+
+	<!-- 客户服务分析 -->
+	<select id="getTotalElementsByService" resultType="long">
+		SELECT COUNT(*) 
+    	FROM (   
+	        SELECT COUNT(c.id) 
+	        FROM customers c
+	        WHERE c.customer_level IS NOT NULL
+		    GROUP BY c.customer_level
+		    HAVING c.customer_level IS NOT NULL
+	    )
+	</select>
+		
+	<select id="getContentByService" resultType="java.util.Map">
+		SELECT * 
+		FROM (
+		  SELECT ROWNUM rn, a.* 
+		  FROM (
+		    SELECT COUNT(c.id) AS "total" , c.customer_level AS "level"
+	    	FROM customers c
+	    	<if test="minOrderDate != null and maxOrderDate != null">
+	    		WHERE o.order_date BETWEEN #{minOrderDate} AND #{maxOrderDate}
+	    	</if>
+			GROUP BY c.customer_level
+			HAVING c.customer_level IS NOT NULL
+			ORDER BY c.customer_level
+		   ) a
+		) s
+		<![CDATA[
+		WHERE s.rn >= #{fromIndex} AND s.rn < #{endIndex}
+		]]>
+	</select>
+
+	<!-- 客户构成分析 -->
+	<select id="getContentByConsist" resultType="java.util.Map">
+		SELECT * 
+		FROM (
+		  SELECT ROWNUM rn, a.* 
+		  FROM (
+		    SELECT COUNT(c.id) AS "total"
+		   	<!-- 用户等级查询 -->
+			<if test="type == 'level'">
+				, c.customer_level AS "type"
+		    	FROM customers c
+				GROUP BY c.customer_level
+				HAVING c.customer_level IS NOT NULL
+				ORDER BY c.customer_level
+			</if>
+			
+			<!-- 用户信用度 -->
+			<if test="type == 'credit'">
+				, c.credit AS "type"
+		    	FROM customers c
+				GROUP BY c.credit
+	    		HAVING c.credit IS NOT NULL 
+	    		ORDER BY c.credit DESC
+			</if>
+			<!-- 用户满意度 -->
+			<if test="type == 'satify'">
+				, c.satify AS "type"
+		    	FROM customers c
+				GROUP BY c.satify
+	    		HAVING c.satify IS NOT NULL 
+	    		ORDER BY c.satify DESC
+			</if>
+		  ) a
+		) s
+		<![CDATA[
+		WHERE s.rn >= #{fromIndex} AND s.rn < #{endIndex}
+		]]>
+	</select>
+	
+	<select id="getTotalElementsByConsist" resultType="long">
+		 SELECT COUNT(*) 
+		 FROM (   
+		    SELECT COUNT(c.id) 
+		    FROM customers c
+		  
+		<if test="type == 'credit'">
+			WHERE c.credit IS NOT NULL 
+			GROUP BY c.credit
+	   		HAVING c.credit IS NOT NULL 
+	   		)
+		</if>
+		<if test="type == 'satify'">
+    		WHERE c.satify IS NOT NULL 
+    		GROUP BY c.satify
+    		HAVING c.satify IS NOT NULL 
+    		)
+		</if>
+		<if test="type == 'level'">
+			WHERE c.customer_level IS NOT NULL
+		    GROUP BY c.customer_level
+		    HAVING c.customer_level IS NOT NULL
+		    )
+		</if>
+	</select>
+
+	<!-- 客户贡献分析 -->
+
+	<sql id="reportQueryConditionByPay">
+		WHERE 1 = 1
+		<if test="name != null and name != ''">
+			AND c.name LIKE #{name}
+		</if>
+		<if test="minOrderDate != null and maxOrderDate != null">
+			AND o.order_date BETWEEN #{minOrderDate} AND #{maxOrderDate}
+		</if>
+	</sql>
+
+	<select id="getTotalElementsByPay" resultType="long">
+		SELECT COUNT(DISTINCT
+		c.id)
+		FROM customers c
+		INNER JOIN orders o
+		ON c.id = o.customer_id
+		LEFT
+		OUTER JOIN order_items oi
+		ON o.id = oi.order_id
+		LEFT OUTER JOIN products p
+		ON oi.product_id = p.id
+		<include refid="reportQueryConditionByPay"/>
+	</select>
+
+	<select id="getContentByPay" resultType="java.util.Map">
+		SELECT *
+		FROM (
+			SELECT ROWNUM rn, s.*
+			FROM (
+				SELECT c.name AS "name", SUM(p.price * oi.item_count) AS "orderMoney"
+				FROM customers c
+				INNER JOIN orders o
+				ON o.customer_id = c.id
+				LEFT OUTER JOIN order_items oi
+				ON o.id = oi.order_id
+				LEFT OUTER JOIN products p
+				ON p.id = oi.product_id
+				<include refid="reportQueryConditionByPay"/>
+				GROUP BY c.name
+			) s
+		) a
+		<![CDATA[
+		WHERE a.rn >= #{fromIndex} AND a.rn < #{endIndex}
+		]]>
+	</select>
+
+</mapper>
